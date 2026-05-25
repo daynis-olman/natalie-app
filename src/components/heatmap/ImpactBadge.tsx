@@ -1,4 +1,4 @@
-import { getImpactColour, type ImpactRating } from "@/lib/heatmapUtils";
+import { getImpactColour } from "@/lib/heatmapUtils";
 import type { ImpactRating as IR } from "@/data/mockData";
 import { cn } from "@/lib/utils";
 
