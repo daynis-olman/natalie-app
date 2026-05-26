@@ -10,7 +10,7 @@ import path from "node:path";
 export default defineConfig({
   plugins: [react(), tailwindcss(), tsconfigPaths()],
   root: path.resolve(__dirname, "static-src"),
-  base: "./",
+  base: "/natalie-app/",
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
