@@ -4,7 +4,7 @@ import { GanttSwimLane } from "@/components/timeline/GanttSwimLane";
 
 export const Route = createFileRoute("/timeline")({
   component: TimelinePage,
-  head: () => ({ meta: [{ title: "Timeline · Change Compass" }] }),
+  head: () => ({ meta: [{ title: "Timeline · Natalie's Compass" }] }),
 });
 
 function TimelinePage() {

@@ -4,7 +4,7 @@ import { InitiativeCard } from "@/components/initiatives/InitiativeCard";
 
 export const Route = createFileRoute("/initiatives")({
   component: InitiativesPage,
-  head: () => ({ meta: [{ title: "Initiatives · Change Compass" }] }),
+  head: () => ({ meta: [{ title: "Initiatives · Natalie's Compass" }] }),
 });
 
 function InitiativesPage() {

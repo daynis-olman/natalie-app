@@ -3,7 +3,7 @@ import { InitiativeHeatmapGrid } from "@/components/heatmap/InitiativeHeatmapGri
 
 export const Route = createFileRoute("/heatmap")({
   component: HeatmapPage,
-  head: () => ({ meta: [{ title: "Heatmap · Change Compass" }] }),
+  head: () => ({ meta: [{ title: "Heatmap · Natalie's Compass" }] }),
 });
 
 function HeatmapPage() {

@@ -48,7 +48,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Change Compass · Heatmap" },
+      { title: "Natalie's Compass · Heatmap" },
       { name: "description", content: "Visualise where change is landing across your business" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
