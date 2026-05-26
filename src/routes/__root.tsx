@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import faviconUrl from "@/assets/favicon.png";
 import { AppShell } from "@/components/layout/AppShell";
 import { AppStateProvider } from "@/context/AppState";
 
@@ -48,10 +49,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Natalie's Compass · Heatmap" },
+      { title: "Natalie's Compass" },
       { name: "description", content: "Visualise where change is landing across your business" },
+      { property: "og:title", content: "Natalie's Compass" },
+      { property: "og:description", content: "Visualise where change is landing across your business" },
+      { property: "og:type", content: "website" },
+      { property: "og:image", content: faviconUrl },
+      { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "Natalie's Compass" },
+      { name: "twitter:description", content: "Visualise where change is landing across your business" },
+      { name: "twitter:image", content: faviconUrl },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", type: "image/png", href: faviconUrl },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
