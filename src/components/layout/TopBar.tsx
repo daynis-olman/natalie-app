@@ -19,7 +19,7 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
   const { theme, toggleTheme, areaFilter, setAreaFilter, areas } = useAppState();
   const [addOpen, setAddOpen] = useState(false);
 
-  const title = TITLES[pathname] ?? "Change Compass";
+  const title = TITLES[pathname] ?? "Natalie's Compass";
 
   return (
     <>

@@ -4,7 +4,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 export const Route = createFileRoute("/criteria")({
   component: CriteriaPage,
-  head: () => ({ meta: [{ title: "Impact Criteria · Change Compass" }] }),
+  head: () => ({ meta: [{ title: "Impact Criteria · Natalie's Compass" }] }),
 });
 
 const LEVELS = [

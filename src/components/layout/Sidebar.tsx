@@ -34,7 +34,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-accent to-accent/60 shadow-sm">
               <Flame className="h-4 w-4 text-white" />
             </div>
-            <span className="font-semibold tracking-tight text-[15px]">Change Compass</span>
+            <span className="font-semibold tracking-tight text-[15px]">Natalie's Compass</span>
           </Link>
           <button onClick={onClose} className="lg:hidden text-sidebar-foreground/70 hover:text-sidebar-foreground">
             <X className="h-5 w-5" />
