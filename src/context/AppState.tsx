@@ -35,6 +35,11 @@ interface AppState {
   addPerson: (p: Person) => void;
   removePerson: (id: string) => void;
 
+  /** Org structure mutations. */
+  addUnit: (u: BusinessUnit) => void;
+  updateUnit: (u: BusinessUnit) => void;
+  removeUnit: (id: string) => void;
+
   /** Current view granularity for grids that show units as columns. */
   viewLevel: ViewLevel;
   setViewLevel: (l: ViewLevel) => void;
