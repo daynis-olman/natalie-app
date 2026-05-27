@@ -486,16 +486,18 @@ function OrgNode({
   const chevronColor = hasContent ? "text-muted-foreground" : "text-muted-foreground/40";
   const chevronSize = depth === 0 ? "h-4 w-4" : "h-3.5 w-3.5";
 
+  const canAddChild = unit.level < 3;
   return (
     <div className="group/unit">
-      <button
-        onClick={() => hasContent && setOpen((o) => !o)}
+      <div
         className={cn(
-          "w-full flex items-center justify-between px-4 py-3 hover:bg-muted/40 transition-colors text-left",
-          !hasContent && "cursor-default",
+          "w-full flex items-center justify-between px-4 py-3 hover:bg-muted/40 transition-colors",
         )}
       >
-        <div className="flex items-center gap-3 min-w-0">
+        <button
+          onClick={() => hasContent && setOpen((o) => !o)}
+          className={cn("flex items-center gap-3 min-w-0 flex-1 text-left", !hasContent && "cursor-default")}
+        >
           {hasContent ? (
             open ? (
               <ChevronDown className={cn(chevronSize, chevronColor, "shrink-0")} />
@@ -509,13 +511,43 @@ function OrgNode({
           {unit.lead && (
             <span className="text-xs text-muted-foreground truncate font-normal">· {unit.lead}</span>
           )}
-        </div>
-        {countLabel && (
-          <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider shrink-0 ml-3">
-            {countLabel}
+        </button>
+        <div className="flex items-center gap-2 shrink-0 ml-3">
+          {countLabel && (
+            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+              {countLabel}
+            </div>
+          )}
+          <div className="flex items-center gap-0.5 opacity-0 group-hover/unit:opacity-100 transition-opacity">
+            {canAddChild && (
+              <button
+                onClick={() => onAddUnit(unit.id)}
+                className="p-1.5 rounded hover:bg-accent/10 text-muted-foreground hover:text-accent transition-colors"
+                aria-label={`Add child of ${unit.name}`}
+                title="Add child unit"
+              >
+                <FolderPlus className="h-3.5 w-3.5" />
+              </button>
+            )}
+            <button
+              onClick={() => onEditUnit(unit)}
+              className="p-1.5 rounded hover:bg-accent/10 text-muted-foreground hover:text-accent transition-colors"
+              aria-label={`Edit ${unit.name}`}
+              title="Edit unit"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => onRemoveUnit(unit)}
+              className="p-1.5 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"
+              aria-label={`Remove ${unit.name}`}
+              title="Remove unit"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
           </div>
-        )}
-      </button>
+        </div>
+      </div>
 
       {open && hasContent && (
         <div className="ml-6 pl-4 border-l border-border/70 pb-1.5">
@@ -572,6 +604,9 @@ function OrgNode({
               loadByPerson={loadByPerson}
               depth={depth + 1}
               onDelete={onDelete}
+              onAddUnit={onAddUnit}
+              onEditUnit={onEditUnit}
+              onRemoveUnit={onRemoveUnit}
             />
           ))}
         </div>
