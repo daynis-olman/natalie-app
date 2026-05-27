@@ -71,7 +71,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const units = BUSINESS_UNITS;
   const leafUnits = useMemo(() => getLeafUnits(units), [units]);
-  const people = PEOPLE;
+  const [people, setPeople] = useState<Person[]>(PEOPLE);
 
   const displayUnits = useMemo(() => {
     // Show units AT the chosen level. For units that are leaves at a higher
@@ -113,6 +113,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       units,
       leafUnits,
       people,
+      addPerson: (p) => setPeople((prev) => [...prev, p]),
+      removePerson: (id) => {
+        setPeople((prev) => prev.filter((p) => p.id !== id));
+        setInitiatives((prev) =>
+          prev.map((i) => ({ ...i, contributors: i.contributors.filter((c) => c.personId !== id) })),
+        );
+      },
       viewLevel,
       setViewLevel,
       displayUnits,
