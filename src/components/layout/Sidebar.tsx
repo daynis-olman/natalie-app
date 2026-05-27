@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Flame, CalendarRange, ListChecks, BookOpen, X } from "lucide-react";
+import { LayoutDashboard, Flame, CalendarRange, ListChecks, BookOpen, Users, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -7,6 +7,7 @@ const NAV = [
   { to: "/heatmap", label: "Heatmap", icon: Flame },
   { to: "/timeline", label: "Timeline", icon: CalendarRange },
   { to: "/initiatives", label: "Initiatives", icon: ListChecks },
+  { to: "/resources", label: "Resources", icon: Users },
   { to: "/criteria", label: "Impact Criteria", icon: BookOpen },
 ] as const;
 

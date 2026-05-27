@@ -2,11 +2,10 @@ import { useState, useMemo } from "react";
 import { useAppState } from "@/context/AppState";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { HeatmapCell } from "./HeatmapCell";
 import { ImpactBadge } from "./ImpactBadge";
-import { getImpactColour, formatDate, maxImpact, getCumulativeColour } from "@/lib/heatmapUtils";
+import { getImpactColour, formatDate, maxImpact, getCumulativeColour, ratingFromScore } from "@/lib/heatmapUtils";
 import type { Initiative } from "@/data/mockData";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip as RTooltip } from "recharts";
 import { cn } from "@/lib/utils";
@@ -29,17 +28,12 @@ function StatusBadge({ status }: { status: Initiative["status"] }) {
 }
 
 export function InitiativeHeatmapGrid() {
-  const { initiatives, areas, areaFilter } = useAppState();
+  const { initiatives, displayUnits, viewLevel, setViewLevel, scoreFor, people } = useAppState();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [selected, setSelected] = useState<Initiative | null>(null);
   const [editing, setEditing] = useState<Initiative | null>(null);
-
-  const visibleAreas = useMemo(
-    () => (areaFilter === "all" ? areas : areas.filter((a) => a.name === areaFilter)),
-    [areas, areaFilter],
-  );
 
   const filtered = useMemo(() => {
     let list = initiatives;
@@ -54,14 +48,22 @@ export function InitiativeHeatmapGrid() {
     return sorted;
   }, [initiatives, statusFilter, sortKey, sortDir]);
 
-  const totals = visibleAreas.map((a) =>
-    filtered.reduce((sum, i) => sum + (i.impacts[a.name] ?? 0), 0),
+  const totals = displayUnits.map((u) =>
+    filtered.reduce((sum, i) => sum + scoreFor(i, u.id), 0),
   );
 
   return (
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
+        <Select value={String(viewLevel)} onValueChange={(v) => setViewLevel(Number(v) as 1 | 2 | 3)}>
+          <SelectTrigger className="h-9 w-44"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1">View: Business Units</SelectItem>
+            <SelectItem value="2">View: Functions</SelectItem>
+            <SelectItem value="3">View: Sub-functions</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -92,9 +94,10 @@ export function InitiativeHeatmapGrid() {
               <th className="sticky left-0 z-10 bg-primary text-left px-4 py-3 font-medium w-[220px]">Initiative</th>
               <th className="text-left px-3 py-3 font-medium w-[110px]">Go-Live</th>
               <th className="text-left px-3 py-3 font-medium w-[100px]">Status</th>
-              {visibleAreas.map((a) => (
-                <th key={a.id} className="px-2 py-3 font-medium text-center min-w-[96px]">
-                  <div className="text-xs leading-tight">{a.name}</div>
+              {displayUnits.map((u) => (
+                <th key={u.id} className="px-2 py-3 font-medium text-center min-w-[96px]">
+                  <div className="text-xs leading-tight">{u.name}</div>
+                  <div className="text-[10px] opacity-70">L{u.level}</div>
                 </th>
               ))}
             </tr>
@@ -115,11 +118,14 @@ export function InitiativeHeatmapGrid() {
                 </td>
                 <td className="px-3 py-3 border-t border-border whitespace-nowrap text-muted-foreground">{formatDate(init.goLiveDate)}</td>
                 <td className="px-3 py-3 border-t border-border"><StatusBadge status={init.status} /></td>
-                {visibleAreas.map((a) => (
-                  <td key={a.id} className="px-2 py-3 border-t border-border text-center">
-                    <HeatmapCell rating={init.impacts[a.name] ?? 0} area={a.name} />
-                  </td>
-                ))}
+                {displayUnits.map((u) => {
+                  const score = scoreFor(init, u.id);
+                  return (
+                    <td key={u.id} className="px-2 py-3 border-t border-border text-center">
+                      <HeatmapCell rating={ratingFromScore(score)} display={score || 0} area={u.name} />
+                    </td>
+                  );
+                })}
               </tr>
             ))}
             {/* Footer cumulative */}
@@ -127,10 +133,10 @@ export function InitiativeHeatmapGrid() {
               <td className="sticky left-0 z-[1] bg-muted/60 px-4 py-3 border-t border-border font-semibold text-xs uppercase tracking-wide text-muted-foreground">Cumulative</td>
               <td className="border-t border-border" />
               <td className="border-t border-border" />
-              {visibleAreas.map((a, i) => {
+              {displayUnits.map((u, i) => {
                 const c = getCumulativeColour(totals[i]);
                 return (
-                  <td key={a.id} className="px-2 py-3 border-t border-border text-center">
+                  <td key={u.id} className="px-2 py-3 border-t border-border text-center">
                     <div className={cn("mx-auto inline-flex h-8 min-w-[36px] items-center justify-center rounded-md px-2 text-sm font-semibold", c.bg, c.text)}>
                       {totals[i]}
                     </div>
@@ -172,24 +178,43 @@ export function InitiativeHeatmapGrid() {
                   <p className="text-sm leading-relaxed">{selected.description}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">Impact Profile</p>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">Impact Profile · {viewLevel === 1 ? "BU" : viewLevel === 2 ? "Function" : "Sub-function"}</p>
                   <div className="h-56">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={areas.map((a) => ({ name: a.name, value: selected.impacts[a.name] ?? 0 }))} margin={{ left: -20 }}>
+                      <BarChart data={displayUnits.map((u) => ({ name: u.name, value: scoreFor(selected, u.id) }))} margin={{ left: -20 }}>
                         <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-30} textAnchor="end" height={70} />
-                        <YAxis domain={[0, 3]} ticks={[0, 1, 2, 3]} tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} />
                         <RTooltip cursor={{ fill: "var(--muted)" }} />
                         <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                          {areas.map((a) => {
-                            const rating = (selected.impacts[a.name] ?? 0) as 0|1|2|3;
-                            const color = rating === 3 ? "#ef4444" : rating === 2 ? "#f59e0b" : rating === 1 ? "#10b981" : "#cbd5e1";
-                            return <Cell key={a.id} fill={color} />;
+                          {displayUnits.map((u) => {
+                            const r = ratingFromScore(scoreFor(selected, u.id));
+                            const color = r === 3 ? "#ef4444" : r === 2 ? "#f59e0b" : r === 1 ? "#10b981" : "#cbd5e1";
+                            return <Cell key={u.id} fill={color} />;
                           })}
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
+
+                {selected.contributors.length > 0 && (
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">Contributors</p>
+                    <ul className="space-y-1.5">
+                      {selected.contributors.map((c) => {
+                        const person = people.find((p) => p.id === c.personId);
+                        if (!person) return null;
+                        return (
+                          <li key={c.personId} className="flex items-center justify-between text-sm">
+                            <span><span className="font-medium">{person.name}</span> <span className="text-muted-foreground">— {c.role ?? person.role}</span></span>
+                            <span className="font-semibold">{c.allocation}%</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+
                 <Button variant="outline" className="w-full" onClick={() => { setEditing(selected); setSelected(null); }}>
                   <Pencil className="h-4 w-4" /> Edit Initiative
                 </Button>

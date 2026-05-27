@@ -4,20 +4,21 @@ import type { ImpactRating } from "@/data/mockData";
 import { IMPACT_CRITERIA, IMPACT_LABEL } from "@/data/mockData";
 import { cn } from "@/lib/utils";
 
-export function HeatmapCell({ rating, area }: { rating: ImpactRating; area: string }) {
+export function HeatmapCell({ rating, area, display }: { rating: ImpactRating; area: string; display?: number }) {
   const c = getImpactColour(rating);
+  const value = display ?? rating;
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
         <TooltipTrigger asChild>
           <div
             className={cn(
-              "mx-auto flex h-9 w-9 items-center justify-center rounded-md text-sm font-semibold cursor-default transition-transform hover:scale-110",
+              "mx-auto flex h-9 min-w-9 px-1.5 items-center justify-center rounded-md text-sm font-semibold cursor-default transition-transform hover:scale-110",
               c.bg,
               c.text,
             )}
           >
-            {rating}
+            {value}
           </div>
         </TooltipTrigger>
         <TooltipContent>

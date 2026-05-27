@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAppState } from "@/context/AppState";
-import { formatDate, getImpactColour, initials, maxImpact } from "@/lib/heatmapUtils";
+import { formatDate, getImpactColour, initials, maxImpact, ratingFromScore } from "@/lib/heatmapUtils";
 import type { Initiative } from "@/data/mockData";
 import { AddEditInitiativeDialog } from "./AddEditInitiativeDialog";
 import { cn } from "@/lib/utils";
@@ -23,7 +23,7 @@ const BORDER_MAP = {
 } as const;
 
 export function InitiativeCard({ initiative }: { initiative: Initiative }) {
-  const { areas, deleteInitiative } = useAppState();
+  const { displayUnits, deleteInitiative, scoreFor, people } = useAppState();
   const [editing, setEditing] = useState(false);
   const max = maxImpact(initiative);
 
@@ -44,20 +44,49 @@ export function InitiativeCard({ initiative }: { initiative: Initiative }) {
 
         <div className="mt-4 flex flex-wrap gap-1.5">
           <TooltipProvider delayDuration={150}>
-            {areas.map((a) => {
-              const r = initiative.impacts[a.name] ?? 0;
-              const c = getImpactColour(r as 0|1|2|3);
+            {displayUnits.map((u) => {
+              const score = scoreFor(initiative, u.id);
+              const r = ratingFromScore(score);
+              const c = getImpactColour(r);
               return (
-                <Tooltip key={a.id}>
+                <Tooltip key={u.id}>
                   <TooltipTrigger asChild>
-                    <div className={cn("h-6 w-6 rounded flex items-center justify-center text-[10px] font-semibold", c.bg, c.text)}>{r}</div>
+                    <div className={cn("h-6 min-w-6 px-1.5 rounded flex items-center justify-center text-[10px] font-semibold", c.bg, c.text)}>{score}</div>
                   </TooltipTrigger>
-                  <TooltipContent><span className="text-xs">{a.name}: <strong>{c.label}</strong></span></TooltipContent>
+                  <TooltipContent><span className="text-xs">{u.name}: <strong>{c.label}</strong> (score {score})</span></TooltipContent>
                 </Tooltip>
               );
             })}
           </TooltipProvider>
         </div>
+
+        {initiative.contributors.length > 0 && (
+          <div className="mt-4 flex items-center gap-2 flex-wrap">
+            <Users className="h-3.5 w-3.5 text-muted-foreground" />
+            {initiative.contributors.slice(0, 6).map((c) => {
+              const person = people.find((p) => p.id === c.personId);
+              if (!person) return null;
+              return (
+                <TooltipProvider key={c.personId} delayDuration={150}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5 text-[11px]">
+                        <span className="font-medium">{person.name}</span>
+                        <span className="text-muted-foreground">{c.allocation}%</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <span className="text-xs">{person.role}{c.role ? ` · ${c.role} on this initiative` : ""}</span>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              );
+            })}
+            {initiative.contributors.length > 6 && (
+              <span className="text-[11px] text-muted-foreground">+{initiative.contributors.length - 6} more</span>
+            )}
+          </div>
+        )}
 
         <div className="mt-4 flex justify-end gap-1">
           <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
