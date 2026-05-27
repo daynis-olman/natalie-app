@@ -417,12 +417,15 @@ const STATUS_TONES: Record<string, { avatar: string; chip: string }> = {
 };
 
 function OrgTreeView({
-  units, people, loadByPerson, onDelete,
+  units, people, loadByPerson, onDelete, onAddUnit, onEditUnit, onRemoveUnit,
 }: {
   units: BusinessUnit[];
   people: Person[];
   loadByPerson: Map<string, PersonLoad>;
   onDelete: (p: Person) => void;
+  onAddUnit: (parentId: string | null) => void;
+  onEditUnit: (unit: BusinessUnit) => void;
+  onRemoveUnit: (unit: BusinessUnit) => void;
 }) {
   const roots = units.filter((u) => u.parentId === null);
   return (
@@ -437,6 +440,9 @@ function OrgTreeView({
             loadByPerson={loadByPerson}
             depth={0}
             onDelete={onDelete}
+            onAddUnit={onAddUnit}
+            onEditUnit={onEditUnit}
+            onRemoveUnit={onRemoveUnit}
           />
         ))}
       </div>
@@ -445,7 +451,7 @@ function OrgTreeView({
 }
 
 function OrgNode({
-  unit, units, people, loadByPerson, depth, onDelete,
+  unit, units, people, loadByPerson, depth, onDelete, onAddUnit, onEditUnit, onRemoveUnit,
 }: {
   unit: BusinessUnit;
   units: BusinessUnit[];
@@ -453,6 +459,9 @@ function OrgNode({
   loadByPerson: Map<string, PersonLoad>;
   depth: number;
   onDelete: (p: Person) => void;
+  onAddUnit: (parentId: string | null) => void;
+  onEditUnit: (unit: BusinessUnit) => void;
+  onRemoveUnit: (unit: BusinessUnit) => void;
 }) {
   const [open, setOpen] = useState(depth < 1);
   const children = units.filter((u) => u.parentId === unit.id);
