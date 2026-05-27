@@ -301,6 +301,30 @@ function ResourcesPage() {
 }
 
 // ─── Org Tree View ──────────────────────────────────────────────────────────
+// Status → tonal classes for avatar + chip (matches "Nesting clarity" direction)
+const STATUS_TONES: Record<string, { avatar: string; chip: string }> = {
+  "Over-allocated": {
+    avatar: "bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-300",
+    chip: "bg-red-50 text-red-600 border-red-100 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/30",
+  },
+  "At capacity": {
+    avatar: "bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-300",
+    chip: "bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30",
+  },
+  "Healthy": {
+    avatar: "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300",
+    chip: "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30",
+  },
+  "Light": {
+    avatar: "bg-sky-100 text-sky-600 dark:bg-sky-500/20 dark:text-sky-300",
+    chip: "bg-sky-50 text-sky-600 border-sky-100 dark:bg-sky-500/15 dark:text-sky-300 dark:border-sky-500/30",
+  },
+  "Unallocated": {
+    avatar: "bg-muted text-muted-foreground",
+    chip: "bg-muted text-muted-foreground border-border",
+  },
+};
+
 function OrgTreeView({
   units, people, loadByPerson, onDelete,
 }: {
@@ -311,10 +335,20 @@ function OrgTreeView({
 }) {
   const roots = units.filter((u) => u.parentId === null);
   return (
-    <div className="rounded-xl border border-border bg-card shadow-sm p-2">
-      {roots.map((u) => (
-        <OrgNode key={u.id} unit={u} units={units} people={people} loadByPerson={loadByPerson} depth={0} onDelete={onDelete} />
-      ))}
+    <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+      <div className="divide-y divide-border/60">
+        {roots.map((u) => (
+          <OrgNode
+            key={u.id}
+            unit={u}
+            units={units}
+            people={people}
+            loadByPerson={loadByPerson}
+            depth={0}
+            onDelete={onDelete}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -334,69 +368,118 @@ function OrgNode({
   const directPeople = people.filter((p) => p.unitId === unit.id);
   const hasContent = children.length > 0 || directPeople.length > 0;
 
+  const countLabel = [
+    directPeople.length > 0 ? `${directPeople.length}` : null,
+    children.length > 0 ? `${children.length} sub` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  // Typography per level
+  const headerText =
+    depth === 0
+      ? "font-semibold text-foreground"
+      : depth === 1
+        ? "font-medium text-foreground"
+        : "font-medium text-foreground/90";
+  const headerSize = depth === 0 ? "text-sm" : "text-sm";
+  const chevronColor = hasContent ? "text-muted-foreground" : "text-muted-foreground/40";
+  const chevronSize = depth === 0 ? "h-4 w-4" : "h-3.5 w-3.5";
+
   return (
-    <div>
+    <div className="group/unit">
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => hasContent && setOpen((o) => !o)}
         className={cn(
-          "w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 text-left",
+          "w-full flex items-center justify-between px-4 py-3 hover:bg-muted/40 transition-colors text-left",
+          !hasContent && "cursor-default",
         )}
-        style={{ paddingLeft: `${depth * 16 + 8}px` }}
       >
-        {hasContent ? (
-          open ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-        ) : (
-          <span className="w-3.5 shrink-0" />
+        <div className="flex items-center gap-3 min-w-0">
+          {hasContent ? (
+            open ? (
+              <ChevronDown className={cn(chevronSize, chevronColor, "shrink-0")} />
+            ) : (
+              <ChevronRight className={cn(chevronSize, chevronColor, "shrink-0")} />
+            )
+          ) : (
+            <span className={cn(chevronSize, "shrink-0")} />
+          )}
+          <span className={cn(headerSize, headerText, "truncate")}>{unit.name}</span>
+          {unit.lead && (
+            <span className="text-xs text-muted-foreground truncate font-normal">· {unit.lead}</span>
+          )}
+        </div>
+        {countLabel && (
+          <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider shrink-0 ml-3">
+            {countLabel}
+          </div>
         )}
-        <span className={cn("font-medium", depth === 0 ? "text-sm" : "text-sm text-muted-foreground")}>{unit.name}</span>
-        {unit.lead && <span className="text-xs text-muted-foreground">· {unit.lead}</span>}
-        <span className="ml-auto text-xs text-muted-foreground">
-          {directPeople.length > 0 && `${directPeople.length} `}
-          {children.length > 0 && `· ${children.length} sub`}
-        </span>
       </button>
 
-      {open && (
-        <div>
+      {open && hasContent && (
+        <div className="ml-6 pl-4 border-l border-border/70 pb-1.5">
           {directPeople.map((person) => {
             const load = loadByPerson.get(person.id);
             const total = load?.total ?? 0;
             const status = loadStatus(total);
+            const tone = STATUS_TONES[status.label] ?? STATUS_TONES["Unallocated"];
             return (
               <div
                 key={person.id}
-                className="flex items-center gap-3 py-1.5 pr-2 rounded-md hover:bg-muted/30 group"
-                style={{ paddingLeft: `${(depth + 1) * 16 + 18}px` }}
+                className="group/row flex items-center justify-between px-3 py-2 mr-2 rounded-lg hover:bg-muted/40 transition-colors"
               >
-                <div className="h-7 w-7 rounded-full bg-accent/15 text-accent flex items-center justify-center text-[11px] font-semibold shrink-0">
-                  {initials(person.name)}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className={cn(
+                      "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                      tone.avatar,
+                    )}
+                  >
+                    {initials(person.name)}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-foreground truncate">{person.name}</div>
+                    <div className="text-xs text-muted-foreground truncate">{person.role}</div>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm truncate">
-                    {person.name} <span className="text-xs text-muted-foreground">· {person.role}</span>
-                  </p>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span
+                    className={cn(
+                      "px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide border whitespace-nowrap",
+                      tone.chip,
+                    )}
+                  >
+                    {total}% · {status.label}
+                  </span>
+                  <button
+                    onClick={() => onDelete(person)}
+                    className="opacity-0 group-hover/row:opacity-100 text-muted-foreground hover:text-red-500 transition-all p-1"
+                    aria-label={`Remove ${person.name}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
-                <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium whitespace-nowrap", status.tone)}>
-                  {total}% · {status.label}
-                </span>
-                <button
-                  onClick={() => onDelete(person)}
-                  className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-600 transition p-1"
-                  aria-label={`Remove ${person.name}`}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
               </div>
             );
           })}
           {children.map((child) => (
-            <OrgNode key={child.id} unit={child} units={units} people={people} loadByPerson={loadByPerson} depth={depth + 1} onDelete={onDelete} />
+            <OrgNode
+              key={child.id}
+              unit={child}
+              units={units}
+              people={people}
+              loadByPerson={loadByPerson}
+              depth={depth + 1}
+              onDelete={onDelete}
+            />
           ))}
         </div>
       )}
     </div>
   );
 }
+
 
 // ─── Add Employee Dialog ────────────────────────────────────────────────────
 function AddEmployeeDialog({
