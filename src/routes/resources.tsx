@@ -247,8 +247,97 @@ function ResourcesPage() {
           people={people}
           loadByPerson={loadByPerson}
           onDelete={(p) => setPendingDelete(p)}
+          onAddUnit={(parentId) => setUnitDialog({ mode: "add", parentId })}
+          onEditUnit={(unit) => setUnitDialog({ mode: "edit", parentId: unit.parentId, unit })}
+          onRemoveUnit={(unit) => setPendingUnitDelete(unit)}
         />
       )}
+
+      {view === "org" && (
+        <div className="flex justify-end">
+          <Button size="sm" variant="outline" onClick={() => setUnitDialog({ mode: "add", parentId: null })}>
+            <FolderPlus className="h-4 w-4 mr-1" /> Add business unit
+          </Button>
+        </div>
+      )}
+
+      <UnitDialog
+        state={unitDialog}
+        units={units}
+        onClose={() => setUnitDialog(null)}
+        onSubmit={(u) => {
+          if (unitDialog?.mode === "edit") {
+            updateUnit(u);
+            toast.success(`Updated ${u.name}`);
+          } else {
+            addUnit(u);
+            toast.success(`Added ${u.name}`);
+          }
+          setUnitDialog(null);
+        }}
+      />
+
+      <AlertDialog open={!!pendingUnitDelete} onOpenChange={(o) => !o && setPendingUnitDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Remove {pendingUnitDelete?.name}?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                {pendingUnitDelete && (() => {
+                  const descendantIds = new Set<string>([
+                    pendingUnitDelete.id,
+                    ...units.filter((u) => {
+                      // walk up
+                      let cur: BusinessUnit | undefined = u;
+                      while (cur?.parentId) {
+                        if (cur.parentId === pendingUnitDelete.id) return true;
+                        cur = units.find((x) => x.id === cur!.parentId);
+                      }
+                      return false;
+                    }).map((u) => u.id),
+                  ]);
+                  const childUnits = units.filter((u) => descendantIds.has(u.id) && u.id !== pendingUnitDelete.id);
+                  const affectedPeople = people.filter((p) => descendantIds.has(p.unitId));
+                  return (
+                    <>
+                      <p>This will permanently delete this unit{childUnits.length > 0 && ` and ${childUnits.length} nested unit${childUnits.length === 1 ? "" : "s"}`}.</p>
+                      {affectedPeople.length > 0 && (
+                        <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3">
+                          <p className="text-sm font-medium text-red-700 dark:text-red-300 mb-1">
+                            {affectedPeople.length} employee{affectedPeople.length === 1 ? "" : "s"} will be removed and unassigned from all initiatives:
+                          </p>
+                          <ul className="text-xs text-red-700/90 dark:text-red-300/90 list-disc pl-5 space-y-0.5 max-h-32 overflow-auto">
+                            {affectedPeople.map((p) => <li key={p.id}>{p.name} · {p.role}</li>)}
+                          </ul>
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground">Recorded impacts against these units will also be cleared.</p>
+                    </>
+                  );
+                })()}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingUnitDelete) {
+                  removeUnit(pendingUnitDelete.id);
+                  toast.success(`Removed ${pendingUnitDelete.name}`);
+                  setPendingUnitDelete(null);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Remove unit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AddEmployeeDialog
         open={addOpen}
