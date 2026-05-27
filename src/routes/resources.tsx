@@ -14,7 +14,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, Users, TrendingUp, Plus, Trash2, ChevronRight, ChevronDown, List, Network } from "lucide-react";
+import { AlertTriangle, Users, TrendingUp, Plus, Trash2, ChevronRight, ChevronDown, List, Network, Pencil, FolderPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDate, initials } from "@/lib/heatmapUtils";
 import { toast } from "sonner";
@@ -39,12 +39,14 @@ function loadStatus(total: number): { label: string; tone: string } {
 }
 
 function ResourcesPage() {
-  const { people, initiatives, units, leafUnits, addPerson, removePerson } = useAppState();
+  const { people, initiatives, units, leafUnits, addPerson, removePerson, addUnit, updateUnit, removeUnit } = useAppState();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [view, setView] = useState<"list" | "org">("list");
   const [addOpen, setAddOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Person | null>(null);
+  const [unitDialog, setUnitDialog] = useState<{ mode: "add" | "edit"; parentId: string | null; unit?: BusinessUnit } | null>(null);
+  const [pendingUnitDelete, setPendingUnitDelete] = useState<BusinessUnit | null>(null);
 
   const loads: PersonLoad[] = useMemo(() => {
     return people.map((person) => {
