@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAppState } from "@/context/AppState";
 import type { BusinessUnit, Initiative, Person } from "@/data/mockData";
 import { Input } from "@/components/ui/input";
@@ -744,8 +744,7 @@ function UnitDialog({
   const [parentId, setParentId] = useState<string | null>(null);
 
   // Reset form whenever dialog opens with new state
-  const stateKey = state ? `${state.mode}-${state.unit?.id ?? state.parentId ?? "root"}` : "";
-  useMemo(() => {
+  useEffect(() => {
     if (!state) return;
     if (state.mode === "edit" && state.unit) {
       setName(state.unit.name);
@@ -756,8 +755,7 @@ function UnitDialog({
       setLead("");
       setParentId(state.parentId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stateKey]);
+  }, [state]);
 
   const parent = parentId ? units.find((u) => u.id === parentId) : null;
   const computedLevel = (parent ? parent.level + 1 : 1) as 1 | 2 | 3;
