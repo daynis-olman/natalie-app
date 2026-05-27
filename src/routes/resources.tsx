@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAppState } from "@/context/AppState";
 import type { BusinessUnit, Initiative, Person } from "@/data/mockData";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, Users, TrendingUp, Plus, Trash2, ChevronRight, ChevronDown, List, Network } from "lucide-react";
+import { AlertTriangle, Users, TrendingUp, Plus, Trash2, ChevronRight, ChevronDown, List, Network, Pencil, FolderPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDate, initials } from "@/lib/heatmapUtils";
 import { toast } from "sonner";
@@ -39,12 +39,14 @@ function loadStatus(total: number): { label: string; tone: string } {
 }
 
 function ResourcesPage() {
-  const { people, initiatives, units, leafUnits, addPerson, removePerson } = useAppState();
+  const { people, initiatives, units, leafUnits, addPerson, removePerson, addUnit, updateUnit, removeUnit } = useAppState();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [view, setView] = useState<"list" | "org">("list");
   const [addOpen, setAddOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Person | null>(null);
+  const [unitDialog, setUnitDialog] = useState<{ mode: "add" | "edit"; parentId: string | null; unit?: BusinessUnit } | null>(null);
+  const [pendingUnitDelete, setPendingUnitDelete] = useState<BusinessUnit | null>(null);
 
   const loads: PersonLoad[] = useMemo(() => {
     return people.map((person) => {
@@ -245,8 +247,97 @@ function ResourcesPage() {
           people={people}
           loadByPerson={loadByPerson}
           onDelete={(p) => setPendingDelete(p)}
+          onAddUnit={(parentId) => setUnitDialog({ mode: "add", parentId })}
+          onEditUnit={(unit) => setUnitDialog({ mode: "edit", parentId: unit.parentId, unit })}
+          onRemoveUnit={(unit) => setPendingUnitDelete(unit)}
         />
       )}
+
+      {view === "org" && (
+        <div className="flex justify-end">
+          <Button size="sm" variant="outline" onClick={() => setUnitDialog({ mode: "add", parentId: null })}>
+            <FolderPlus className="h-4 w-4 mr-1" /> Add business unit
+          </Button>
+        </div>
+      )}
+
+      <UnitDialog
+        state={unitDialog}
+        units={units}
+        onClose={() => setUnitDialog(null)}
+        onSubmit={(u) => {
+          if (unitDialog?.mode === "edit") {
+            updateUnit(u);
+            toast.success(`Updated ${u.name}`);
+          } else {
+            addUnit(u);
+            toast.success(`Added ${u.name}`);
+          }
+          setUnitDialog(null);
+        }}
+      />
+
+      <AlertDialog open={!!pendingUnitDelete} onOpenChange={(o) => !o && setPendingUnitDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Remove {pendingUnitDelete?.name}?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                {pendingUnitDelete && (() => {
+                  const descendantIds = new Set<string>([
+                    pendingUnitDelete.id,
+                    ...units.filter((u) => {
+                      // walk up
+                      let cur: BusinessUnit | undefined = u;
+                      while (cur?.parentId) {
+                        if (cur.parentId === pendingUnitDelete.id) return true;
+                        cur = units.find((x) => x.id === cur!.parentId);
+                      }
+                      return false;
+                    }).map((u) => u.id),
+                  ]);
+                  const childUnits = units.filter((u) => descendantIds.has(u.id) && u.id !== pendingUnitDelete.id);
+                  const affectedPeople = people.filter((p) => descendantIds.has(p.unitId));
+                  return (
+                    <>
+                      <p>This will permanently delete this unit{childUnits.length > 0 && ` and ${childUnits.length} nested unit${childUnits.length === 1 ? "" : "s"}`}.</p>
+                      {affectedPeople.length > 0 && (
+                        <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3">
+                          <p className="text-sm font-medium text-red-700 dark:text-red-300 mb-1">
+                            {affectedPeople.length} employee{affectedPeople.length === 1 ? "" : "s"} will be removed and unassigned from all initiatives:
+                          </p>
+                          <ul className="text-xs text-red-700/90 dark:text-red-300/90 list-disc pl-5 space-y-0.5 max-h-32 overflow-auto">
+                            {affectedPeople.map((p) => <li key={p.id}>{p.name} · {p.role}</li>)}
+                          </ul>
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground">Recorded impacts against these units will also be cleared.</p>
+                    </>
+                  );
+                })()}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingUnitDelete) {
+                  removeUnit(pendingUnitDelete.id);
+                  toast.success(`Removed ${pendingUnitDelete.name}`);
+                  setPendingUnitDelete(null);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Remove unit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AddEmployeeDialog
         open={addOpen}
@@ -326,12 +417,15 @@ const STATUS_TONES: Record<string, { avatar: string; chip: string }> = {
 };
 
 function OrgTreeView({
-  units, people, loadByPerson, onDelete,
+  units, people, loadByPerson, onDelete, onAddUnit, onEditUnit, onRemoveUnit,
 }: {
   units: BusinessUnit[];
   people: Person[];
   loadByPerson: Map<string, PersonLoad>;
   onDelete: (p: Person) => void;
+  onAddUnit: (parentId: string | null) => void;
+  onEditUnit: (unit: BusinessUnit) => void;
+  onRemoveUnit: (unit: BusinessUnit) => void;
 }) {
   const roots = units.filter((u) => u.parentId === null);
   return (
@@ -346,6 +440,9 @@ function OrgTreeView({
             loadByPerson={loadByPerson}
             depth={0}
             onDelete={onDelete}
+            onAddUnit={onAddUnit}
+            onEditUnit={onEditUnit}
+            onRemoveUnit={onRemoveUnit}
           />
         ))}
       </div>
@@ -354,7 +451,7 @@ function OrgTreeView({
 }
 
 function OrgNode({
-  unit, units, people, loadByPerson, depth, onDelete,
+  unit, units, people, loadByPerson, depth, onDelete, onAddUnit, onEditUnit, onRemoveUnit,
 }: {
   unit: BusinessUnit;
   units: BusinessUnit[];
@@ -362,6 +459,9 @@ function OrgNode({
   loadByPerson: Map<string, PersonLoad>;
   depth: number;
   onDelete: (p: Person) => void;
+  onAddUnit: (parentId: string | null) => void;
+  onEditUnit: (unit: BusinessUnit) => void;
+  onRemoveUnit: (unit: BusinessUnit) => void;
 }) {
   const [open, setOpen] = useState(depth < 1);
   const children = units.filter((u) => u.parentId === unit.id);
@@ -386,16 +486,18 @@ function OrgNode({
   const chevronColor = hasContent ? "text-muted-foreground" : "text-muted-foreground/40";
   const chevronSize = depth === 0 ? "h-4 w-4" : "h-3.5 w-3.5";
 
+  const canAddChild = unit.level < 3;
   return (
     <div className="group/unit">
-      <button
-        onClick={() => hasContent && setOpen((o) => !o)}
+      <div
         className={cn(
-          "w-full flex items-center justify-between px-4 py-3 hover:bg-muted/40 transition-colors text-left",
-          !hasContent && "cursor-default",
+          "w-full flex items-center justify-between px-4 py-3 hover:bg-muted/40 transition-colors",
         )}
       >
-        <div className="flex items-center gap-3 min-w-0">
+        <button
+          onClick={() => hasContent && setOpen((o) => !o)}
+          className={cn("flex items-center gap-3 min-w-0 flex-1 text-left", !hasContent && "cursor-default")}
+        >
           {hasContent ? (
             open ? (
               <ChevronDown className={cn(chevronSize, chevronColor, "shrink-0")} />
@@ -409,13 +511,43 @@ function OrgNode({
           {unit.lead && (
             <span className="text-xs text-muted-foreground truncate font-normal">· {unit.lead}</span>
           )}
-        </div>
-        {countLabel && (
-          <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider shrink-0 ml-3">
-            {countLabel}
+        </button>
+        <div className="flex items-center gap-2 shrink-0 ml-3">
+          {countLabel && (
+            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+              {countLabel}
+            </div>
+          )}
+          <div className="flex items-center gap-0.5 opacity-0 group-hover/unit:opacity-100 transition-opacity">
+            {canAddChild && (
+              <button
+                onClick={() => onAddUnit(unit.id)}
+                className="p-1.5 rounded hover:bg-accent/10 text-muted-foreground hover:text-accent transition-colors"
+                aria-label={`Add child of ${unit.name}`}
+                title="Add child unit"
+              >
+                <FolderPlus className="h-3.5 w-3.5" />
+              </button>
+            )}
+            <button
+              onClick={() => onEditUnit(unit)}
+              className="p-1.5 rounded hover:bg-accent/10 text-muted-foreground hover:text-accent transition-colors"
+              aria-label={`Edit ${unit.name}`}
+              title="Edit unit"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => onRemoveUnit(unit)}
+              className="p-1.5 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"
+              aria-label={`Remove ${unit.name}`}
+              title="Remove unit"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
           </div>
-        )}
-      </button>
+        </div>
+      </div>
 
       {open && hasContent && (
         <div className="ml-6 pl-4 border-l border-border/70 pb-1.5">
@@ -472,6 +604,9 @@ function OrgNode({
               loadByPerson={loadByPerson}
               depth={depth + 1}
               onDelete={onDelete}
+              onAddUnit={onAddUnit}
+              onEditUnit={onEditUnit}
+              onRemoveUnit={onRemoveUnit}
             />
           ))}
         </div>
@@ -591,5 +726,127 @@ function SummaryCard({
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Unit Add/Edit Dialog ───────────────────────────────────────────────────
+function UnitDialog({
+  state, units, onClose, onSubmit,
+}: {
+  state: { mode: "add" | "edit"; parentId: string | null; unit?: BusinessUnit } | null;
+  units: BusinessUnit[];
+  onClose: () => void;
+  onSubmit: (u: BusinessUnit) => void;
+}) {
+  const isEdit = state?.mode === "edit";
+  const [name, setName] = useState("");
+  const [lead, setLead] = useState("");
+  const [parentId, setParentId] = useState<string | null>(null);
+
+  // Reset form whenever dialog opens with new state
+  useEffect(() => {
+    if (!state) return;
+    if (state.mode === "edit" && state.unit) {
+      setName(state.unit.name);
+      setLead(state.unit.lead ?? "");
+      setParentId(state.unit.parentId);
+    } else {
+      setName("");
+      setLead("");
+      setParentId(state.parentId);
+    }
+  }, [state]);
+
+  const parent = parentId ? units.find((u) => u.id === parentId) : null;
+  const computedLevel = (parent ? parent.level + 1 : 1) as 1 | 2 | 3;
+
+  // Possible parents: only units whose level < 3, and not the unit being edited or its descendants
+  const eligibleParents = units.filter((u) => {
+    if (u.level >= 3) return false;
+    if (!isEdit || !state?.unit) return true;
+    if (u.id === state.unit.id) return false;
+    // Exclude descendants of the edited unit
+    let cur: BusinessUnit | undefined = u;
+    while (cur?.parentId) {
+      if (cur.parentId === state.unit.id) return false;
+      cur = units.find((x) => x.id === cur!.parentId);
+    }
+    return true;
+  });
+
+  const unitLabel = (u: BusinessUnit) => {
+    const parts: string[] = [u.name];
+    let cur: BusinessUnit | undefined = u;
+    while (cur?.parentId) {
+      const p = units.find((x) => x.id === cur!.parentId);
+      if (!p) break;
+      parts.unshift(p.name);
+      cur = p;
+    }
+    return parts.join(" › ");
+  };
+
+  const submit = () => {
+    if (!name.trim()) {
+      toast.error("Please enter a unit name");
+      return;
+    }
+    const unit: BusinessUnit = {
+      id: isEdit && state?.unit ? state.unit.id : `u-${Date.now()}`,
+      name: name.trim(),
+      parentId,
+      level: computedLevel,
+      lead: lead.trim() || undefined,
+    };
+    onSubmit(unit);
+  };
+
+  return (
+    <Dialog open={!!state} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{isEdit ? "Edit unit" : "Add business unit"}</DialogTitle>
+          <DialogDescription>
+            {isEdit
+              ? "Update this unit's name, lead, or where it sits in the hierarchy."
+              : parent
+                ? `Adding a ${computedLevel === 2 ? "function" : "sub-function"} under ${parent.name}.`
+                : "Adding a top-level business unit."}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="unit-name">Name</Label>
+            <Input id="unit-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. People and Culture" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="unit-lead">Lead (optional)</Label>
+            <Input id="unit-lead" value={lead} onChange={(e) => setLead(e.target.value)} placeholder="e.g. Natalie Chen" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Parent</Label>
+            <Select
+              value={parentId ?? "__root__"}
+              onValueChange={(v) => setParentId(v === "__root__" ? null : v)}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__root__">— Top level (Business Unit) —</SelectItem>
+                {eligibleParents.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>{unitLabel(u)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Level {computedLevel} · {computedLevel === 1 ? "Business Unit" : computedLevel === 2 ? "Function" : "Sub-function"}
+            </p>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={submit}>{isEdit ? "Save changes" : "Add unit"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

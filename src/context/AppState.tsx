@@ -35,6 +35,11 @@ interface AppState {
   addPerson: (p: Person) => void;
   removePerson: (id: string) => void;
 
+  /** Org structure mutations. */
+  addUnit: (u: BusinessUnit) => void;
+  updateUnit: (u: BusinessUnit) => void;
+  removeUnit: (id: string) => void;
+
   /** Current view granularity for grids that show units as columns. */
   viewLevel: ViewLevel;
   setViewLevel: (l: ViewLevel) => void;
@@ -69,7 +74,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     else root.classList.remove("dark");
   }, [theme]);
 
-  const units = BUSINESS_UNITS;
+  const [units, setUnits] = useState<BusinessUnit[]>(BUSINESS_UNITS);
   const leafUnits = useMemo(() => getLeafUnits(units), [units]);
   const [people, setPeople] = useState<Person[]>(PEOPLE);
 
@@ -118,6 +123,24 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setPeople((prev) => prev.filter((p) => p.id !== id));
         setInitiatives((prev) =>
           prev.map((i) => ({ ...i, contributors: i.contributors.filter((c) => c.personId !== id) })),
+        );
+      },
+      addUnit: (u) => setUnits((prev) => [...prev, u]),
+      updateUnit: (u) => setUnits((prev) => prev.map((x) => (x.id === u.id ? u : x))),
+      removeUnit: (id) => {
+        setUnits((prev) => {
+          const toRemove = new Set<string>([id, ...getDescendants(prev, id).map((d) => d.id)]);
+          return prev.filter((u) => !toRemove.has(u.id));
+        });
+        // Cascade: drop people in removed units; drop impacts keyed on removed leaves.
+        const removedIds = new Set<string>([id, ...getDescendants(units, id).map((d) => d.id)]);
+        setPeople((prev) => prev.filter((p) => !removedIds.has(p.unitId)));
+        setInitiatives((prev) =>
+          prev.map((i) => {
+            const impacts = { ...i.impacts };
+            for (const k of Object.keys(impacts)) if (removedIds.has(k)) delete impacts[k];
+            return { ...i, impacts };
+          }),
         );
       },
       viewLevel,
