@@ -32,6 +32,8 @@ interface AppState {
   leafUnits: BusinessUnit[];
   /** People directory. */
   people: Person[];
+  addPerson: (p: Person) => void;
+  removePerson: (id: string) => void;
 
   /** Current view granularity for grids that show units as columns. */
   viewLevel: ViewLevel;
