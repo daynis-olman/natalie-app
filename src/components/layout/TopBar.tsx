@@ -11,15 +11,17 @@ const TITLES: Record<string, string> = {
   "/heatmap": "Heatmap",
   "/timeline": "Timeline",
   "/initiatives": "Initiatives",
+  "/resources": "Resources",
   "/criteria": "Impact Criteria",
 };
 
 export function TopBar({ onMenu }: { onMenu: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { theme, toggleTheme, areaFilter, setAreaFilter, areas } = useAppState();
+  const { theme, toggleTheme, areaFilter, setAreaFilter, units } = useAppState();
   const [addOpen, setAddOpen] = useState(false);
 
   const title = TITLES[pathname] ?? "Natalie's Compass";
+  const activeFilter = areaFilter === "all" ? null : units.find((u) => u.id === areaFilter);
 
   return (
     <>
@@ -31,10 +33,10 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <h1 className="truncate text-base sm:text-lg font-semibold tracking-tight">{title}</h1>
-              {areaFilter !== "all" && (
+              {activeFilter && (
                 <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-accent/10 text-accent px-2.5 py-0.5 text-xs font-medium">
                   <Filter className="h-3 w-3" />
-                  {areaFilter}
+                  {activeFilter.name}
                   <button onClick={() => setAreaFilter("all")} className="hover:opacity-70">
                     <X className="h-3 w-3" />
                   </button>
@@ -44,16 +46,18 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="hidden sm:block w-48">
+            <div className="hidden sm:block w-56">
               <Select value={areaFilter} onValueChange={setAreaFilter}>
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="All areas" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All areas</SelectItem>
-                  {areas.map((a) => (
-                    <SelectItem key={a.id} value={a.name}>
-                      {a.name}
+                  {units.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      <span style={{ paddingLeft: `${(u.level - 1) * 10}px` }}>
+                        {u.level > 1 ? "↳ " : ""}{u.name}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>

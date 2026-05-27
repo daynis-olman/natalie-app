@@ -1,4 +1,4 @@
-import type { BusinessArea, ImpactRating, Initiative } from "@/data/mockData";
+import type { BusinessUnit, ImpactRating, Initiative } from "@/data/mockData";
 
 export function generateMonths(start: Date, end: Date): Date[] {
   const months: Date[] = [];
@@ -20,10 +20,20 @@ export function isActiveInMonth(initiative: Initiative, month: Date): boolean {
   return m >= start && m <= end;
 }
 
-export function getCumulativeScore(area: string, month: Date, initiatives: Initiative[]): number {
+/**
+ * Cumulative impact score for a unit in a month, summed over all initiatives
+ * active in that month. `scoreFor` is supplied so callers can use the
+ * roll-up logic from AppState (handles non-leaf units).
+ */
+export function getCumulativeScore(
+  unitId: string,
+  month: Date,
+  initiatives: Initiative[],
+  scoreFor: (i: Initiative, unitId: string) => number,
+): number {
   return initiatives.reduce((sum, i) => {
     if (!isActiveInMonth(i, month)) return sum;
-    return sum + (i.impacts[area] ?? 0);
+    return sum + scoreFor(i, unitId);
   }, 0);
 }
 
@@ -49,10 +59,23 @@ export function getImpactColour(rating: ImpactRating): { bg: string; text: strin
   }
 }
 
-export function findPeakMonth(months: Date[], areas: BusinessArea[], initiatives: Initiative[]): { month: Date; score: number } {
+/** For a cumulative-impact cell, clamp the score onto the 0-3 colour scale. */
+export function ratingFromScore(score: number): ImpactRating {
+  if (score >= 6) return 3;
+  if (score >= 3) return 2;
+  if (score >= 1) return 1;
+  return 0;
+}
+
+export function findPeakMonth(
+  months: Date[],
+  units: BusinessUnit[],
+  initiatives: Initiative[],
+  scoreFor: (i: Initiative, unitId: string) => number,
+): { month: Date; score: number } {
   let best = { month: months[0] ?? new Date(), score: 0 };
   for (const m of months) {
-    const score = areas.reduce((s, a) => s + getCumulativeScore(a.name, m, initiatives), 0);
+    const score = units.reduce((s, u) => s + getCumulativeScore(u.id, m, initiatives, scoreFor), 0);
     if (score > best.score) best = { month: m, score };
   }
   return best;

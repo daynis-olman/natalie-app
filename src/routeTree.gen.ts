@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TimelineRouteImport } from './routes/timeline'
+import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as InitiativesRouteImport } from './routes/initiatives'
 import { Route as HeatmapRouteImport } from './routes/heatmap'
 import { Route as CriteriaRouteImport } from './routes/criteria'
@@ -18,6 +19,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const TimelineRoute = TimelineRouteImport.update({
   id: '/timeline',
   path: '/timeline',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResourcesRoute = ResourcesRouteImport.update({
+  id: '/resources',
+  path: '/resources',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InitiativesRoute = InitiativesRouteImport.update({
@@ -46,6 +52,7 @@ export interface FileRoutesByFullPath {
   '/criteria': typeof CriteriaRoute
   '/heatmap': typeof HeatmapRoute
   '/initiatives': typeof InitiativesRoute
+  '/resources': typeof ResourcesRoute
   '/timeline': typeof TimelineRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/criteria': typeof CriteriaRoute
   '/heatmap': typeof HeatmapRoute
   '/initiatives': typeof InitiativesRoute
+  '/resources': typeof ResourcesRoute
   '/timeline': typeof TimelineRoute
 }
 export interface FileRoutesById {
@@ -61,14 +69,34 @@ export interface FileRoutesById {
   '/criteria': typeof CriteriaRoute
   '/heatmap': typeof HeatmapRoute
   '/initiatives': typeof InitiativesRoute
+  '/resources': typeof ResourcesRoute
   '/timeline': typeof TimelineRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/criteria' | '/heatmap' | '/initiatives' | '/timeline'
+  fullPaths:
+    | '/'
+    | '/criteria'
+    | '/heatmap'
+    | '/initiatives'
+    | '/resources'
+    | '/timeline'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/criteria' | '/heatmap' | '/initiatives' | '/timeline'
-  id: '__root__' | '/' | '/criteria' | '/heatmap' | '/initiatives' | '/timeline'
+  to:
+    | '/'
+    | '/criteria'
+    | '/heatmap'
+    | '/initiatives'
+    | '/resources'
+    | '/timeline'
+  id:
+    | '__root__'
+    | '/'
+    | '/criteria'
+    | '/heatmap'
+    | '/initiatives'
+    | '/resources'
+    | '/timeline'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,6 +104,7 @@ export interface RootRouteChildren {
   CriteriaRoute: typeof CriteriaRoute
   HeatmapRoute: typeof HeatmapRoute
   InitiativesRoute: typeof InitiativesRoute
+  ResourcesRoute: typeof ResourcesRoute
   TimelineRoute: typeof TimelineRoute
 }
 
@@ -86,6 +115,13 @@ declare module '@tanstack/react-router' {
       path: '/timeline'
       fullPath: '/timeline'
       preLoaderRoute: typeof TimelineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resources': {
+      id: '/resources'
+      path: '/resources'
+      fullPath: '/resources'
+      preLoaderRoute: typeof ResourcesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/initiatives': {
@@ -124,6 +160,7 @@ const rootRouteChildren: RootRouteChildren = {
   CriteriaRoute: CriteriaRoute,
   HeatmapRoute: HeatmapRoute,
   InitiativesRoute: InitiativesRoute,
+  ResourcesRoute: ResourcesRoute,
   TimelineRoute: TimelineRoute,
 }
 export const routeTree = rootRouteImport
