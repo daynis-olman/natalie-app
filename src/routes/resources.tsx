@@ -728,3 +728,127 @@ function SummaryCard({
     </div>
   );
 }
+
+// ─── Unit Add/Edit Dialog ───────────────────────────────────────────────────
+function UnitDialog({
+  state, units, onClose, onSubmit,
+}: {
+  state: { mode: "add" | "edit"; parentId: string | null; unit?: BusinessUnit } | null;
+  units: BusinessUnit[];
+  onClose: () => void;
+  onSubmit: (u: BusinessUnit) => void;
+}) {
+  const isEdit = state?.mode === "edit";
+  const [name, setName] = useState("");
+  const [lead, setLead] = useState("");
+  const [parentId, setParentId] = useState<string | null>(null);
+
+  // Reset form whenever dialog opens with new state
+  const stateKey = state ? `${state.mode}-${state.unit?.id ?? state.parentId ?? "root"}` : "";
+  useMemo(() => {
+    if (!state) return;
+    if (state.mode === "edit" && state.unit) {
+      setName(state.unit.name);
+      setLead(state.unit.lead ?? "");
+      setParentId(state.unit.parentId);
+    } else {
+      setName("");
+      setLead("");
+      setParentId(state.parentId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stateKey]);
+
+  const parent = parentId ? units.find((u) => u.id === parentId) : null;
+  const computedLevel = (parent ? parent.level + 1 : 1) as 1 | 2 | 3;
+
+  // Possible parents: only units whose level < 3, and not the unit being edited or its descendants
+  const eligibleParents = units.filter((u) => {
+    if (u.level >= 3) return false;
+    if (!isEdit || !state?.unit) return true;
+    if (u.id === state.unit.id) return false;
+    // Exclude descendants of the edited unit
+    let cur: BusinessUnit | undefined = u;
+    while (cur?.parentId) {
+      if (cur.parentId === state.unit.id) return false;
+      cur = units.find((x) => x.id === cur!.parentId);
+    }
+    return true;
+  });
+
+  const unitLabel = (u: BusinessUnit) => {
+    const parts: string[] = [u.name];
+    let cur: BusinessUnit | undefined = u;
+    while (cur?.parentId) {
+      const p = units.find((x) => x.id === cur!.parentId);
+      if (!p) break;
+      parts.unshift(p.name);
+      cur = p;
+    }
+    return parts.join(" › ");
+  };
+
+  const submit = () => {
+    if (!name.trim()) {
+      toast.error("Please enter a unit name");
+      return;
+    }
+    const unit: BusinessUnit = {
+      id: isEdit && state?.unit ? state.unit.id : `u-${Date.now()}`,
+      name: name.trim(),
+      parentId,
+      level: computedLevel,
+      lead: lead.trim() || undefined,
+    };
+    onSubmit(unit);
+  };
+
+  return (
+    <Dialog open={!!state} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{isEdit ? "Edit unit" : "Add business unit"}</DialogTitle>
+          <DialogDescription>
+            {isEdit
+              ? "Update this unit's name, lead, or where it sits in the hierarchy."
+              : parent
+                ? `Adding a ${computedLevel === 2 ? "function" : "sub-function"} under ${parent.name}.`
+                : "Adding a top-level business unit."}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="unit-name">Name</Label>
+            <Input id="unit-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. People and Culture" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="unit-lead">Lead (optional)</Label>
+            <Input id="unit-lead" value={lead} onChange={(e) => setLead(e.target.value)} placeholder="e.g. Natalie Chen" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Parent</Label>
+            <Select
+              value={parentId ?? "__root__"}
+              onValueChange={(v) => setParentId(v === "__root__" ? null : v)}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__root__">— Top level (Business Unit) —</SelectItem>
+                {eligibleParents.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>{unitLabel(u)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Level {computedLevel} · {computedLevel === 1 ? "Business Unit" : computedLevel === 2 ? "Function" : "Sub-function"}
+            </p>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={submit}>{isEdit ? "Save changes" : "Add unit"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
