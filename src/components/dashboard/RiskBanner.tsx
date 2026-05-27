@@ -3,14 +3,14 @@ import { useAppState } from "@/context/AppState";
 import { generateMonths, getCumulativeScore, formatMonth } from "@/lib/heatmapUtils";
 
 export function RiskBanner() {
-  const { initiatives, areas } = useAppState();
+  const { initiatives, displayUnits, scoreFor } = useAppState();
   const today = new Date();
   const months = generateMonths(today, new Date(today.getFullYear() + 1, today.getMonth() + 6, 1));
 
   let peakMonth: Date | null = null;
   let peakCount = 0;
   for (const m of months) {
-    const overloaded = areas.filter((a) => getCumulativeScore(a.name, m, initiatives) >= 6);
+    const overloaded = displayUnits.filter((u) => getCumulativeScore(u.id, m, initiatives, scoreFor) >= 6);
     if (overloaded.length > peakCount) {
       peakCount = overloaded.length;
       peakMonth = m;

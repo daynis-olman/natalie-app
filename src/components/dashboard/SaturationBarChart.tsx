@@ -6,7 +6,7 @@ import { generateMonths, isActiveInMonth, formatMonth } from "@/lib/heatmapUtils
 const PALETTE = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#06b6d4", "#ef4444", "#84cc16"];
 
 export function SaturationBarChart() {
-  const { initiatives, areas, areaFilter } = useAppState();
+  const { initiatives, displayUnits, areaFilter, scoreFor } = useAppState();
 
   const data = useMemo(() => {
     const today = new Date();
@@ -15,12 +15,12 @@ export function SaturationBarChart() {
       const row: Record<string, number | string> = { month: formatMonth(m) };
       initiatives.forEach((i) => {
         if (!isActiveInMonth(i, m)) { row[i.name] = 0; return; }
-        const areaList = areaFilter === "all" ? areas.map((a) => a.name) : [areaFilter];
-        row[i.name] = areaList.reduce((s, n) => s + (i.impacts[n] ?? 0), 0);
+        const unitIds = areaFilter === "all" ? displayUnits.map((u) => u.id) : [areaFilter];
+        row[i.name] = unitIds.reduce((s, id) => s + scoreFor(i, id), 0);
       });
       return row;
     });
-  }, [initiatives, areas, areaFilter]);
+  }, [initiatives, displayUnits, areaFilter, scoreFor]);
 
   const avg = useMemo(() => {
     const totals = data.map((d) => initiatives.reduce((s, i) => s + ((d[i.name] as number) ?? 0), 0));
