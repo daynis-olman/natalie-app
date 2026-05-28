@@ -62,7 +62,7 @@ export function Sidebar({ mobileOpen, onCloseMobile, collapsed, onToggleCollapse
             "inset -1px 0 0 0 color-mix(in oklab, white 6%, transparent), 8px 0 24px -12px rgba(0,0,0,0.45), 2px 0 8px -4px rgba(0,0,0,0.25)",
         }}
         className={cn(
-          "group/sidebar fixed inset-y-0 left-0 z-50 flex flex-col text-sidebar-foreground border-r border-sidebar-border/70 transition-[width,transform] duration-300 ease-out lg:translate-x-0 lg:static lg:z-auto",
+          "group/sidebar fixed inset-y-0 left-0 z-50 flex flex-col text-sidebar-foreground border-r border-sidebar-border/70 transition-[width,transform] duration-300 ease-out lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:z-auto",
           collapsed ? "w-[68px]" : "w-60",
           mobileOpen ? "translate-x-0 w-60" : "-translate-x-full",
         )}
