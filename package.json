@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build && vite build --config vite.firebase.config.ts",
+    "build": "vite build --config vite.firebase.config.ts",
+    "build:cloudflare": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "start": "node server.mjs",
