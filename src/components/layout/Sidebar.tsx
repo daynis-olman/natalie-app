@@ -55,20 +55,26 @@ export function Sidebar({ mobileOpen, onCloseMobile, collapsed, onToggleCollapse
       />
       <aside
         data-collapsed={collapsed}
+        style={{
+          backgroundImage:
+            "radial-gradient(120% 60% at 50% -10%, color-mix(in oklab, var(--accent) 18%, transparent), transparent 60%), linear-gradient(180deg, color-mix(in oklab, var(--sidebar) 92%, white 4%) 0%, var(--sidebar) 45%, color-mix(in oklab, var(--sidebar) 88%, black 8%) 100%)",
+          boxShadow:
+            "inset -1px 0 0 0 color-mix(in oklab, white 6%, transparent), 8px 0 24px -12px rgba(0,0,0,0.45), 2px 0 8px -4px rgba(0,0,0,0.25)",
+        }}
         className={cn(
-          "group/sidebar fixed inset-y-0 left-0 z-50 flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-[width,transform] duration-300 ease-out lg:translate-x-0 lg:static lg:z-auto",
+          "group/sidebar fixed inset-y-0 left-0 z-50 flex flex-col text-sidebar-foreground border-r border-sidebar-border/70 transition-[width,transform] duration-300 ease-out lg:translate-x-0 lg:static lg:z-auto",
           collapsed ? "w-[68px]" : "w-60",
           mobileOpen ? "translate-x-0 w-60" : "-translate-x-full",
         )}
       >
         {/* Brand */}
-        <div className={cn("flex h-14 shrink-0 items-center px-3", collapsed ? "justify-center" : "justify-between pl-4 pr-2")}>
+        <div className={cn("flex h-14 shrink-0 items-center border-b border-white/[0.06] px-3", collapsed ? "justify-center" : "justify-between pl-4 pr-2")}>
           <Link to="/" className="flex items-center gap-2.5 min-w-0" onClick={onCloseMobile}>
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-accent to-accent/60 shadow-[0_4px_12px_-2px_color-mix(in_oklab,var(--accent)_45%,transparent)]">
-              <Flame className="h-4 w-4 text-white" />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-accent to-accent/60 shadow-[0_6px_16px_-4px_color-mix(in_oklab,var(--accent)_55%,transparent),inset_0_1px_0_0_color-mix(in_oklab,white_30%,transparent)] ring-1 ring-white/10">
+              <Flame className="h-4 w-4 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.35)]" />
             </div>
             {!collapsed && (
-              <span className="truncate font-semibold tracking-tight text-[15px]">Natalie's Compass</span>
+              <span className="truncate font-semibold tracking-tight text-[15px] [text-shadow:0_1px_0_rgba(0,0,0,0.25)]">Natalie's Compass</span>
             )}
           </Link>
           {!collapsed && (
@@ -91,22 +97,22 @@ export function Sidebar({ mobileOpen, onCloseMobile, collapsed, onToggleCollapse
                 to={to}
                 onClick={onCloseMobile}
                 className={cn(
-                  "group relative flex items-center rounded-lg text-sm transition-all",
+                  "group relative flex items-center rounded-lg text-sm transition-all duration-200",
                   collapsed ? "h-10 w-10 justify-center mx-auto" : "gap-3 px-3 py-2",
                   active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+                    ? "bg-gradient-to-b from-white/[0.10] to-white/[0.04] text-sidebar-accent-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_4px_12px_-4px_rgba(0,0,0,0.4)] ring-1 ring-white/10"
+                    : "text-sidebar-foreground/70 hover:bg-white/[0.05] hover:text-sidebar-foreground hover:ring-1 hover:ring-white/[0.06]",
                 )}
               >
                 {active && (
                   <span
                     className={cn(
-                      "absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r bg-accent",
-                      collapsed && "h-6",
+                      "absolute left-0 top-1/2 -translate-y-1/2 rounded-r bg-accent shadow-[0_0_12px_2px_color-mix(in_oklab,var(--accent)_60%,transparent)]",
+                      collapsed ? "h-6 w-[3px]" : "h-5 w-[3px]",
                     )}
                   />
                 )}
-                <Icon className="h-4 w-4 shrink-0" />
+                <Icon className={cn("h-4 w-4 shrink-0 transition-colors", active && "text-accent")} />
                 {!collapsed && <span className="font-medium truncate">{label}</span>}
               </Link>
             );
@@ -124,18 +130,18 @@ export function Sidebar({ mobileOpen, onCloseMobile, collapsed, onToggleCollapse
         </nav>
 
         {/* Bottom pinned: account + collapse toggle */}
-        <div className="mt-auto shrink-0 border-t border-sidebar-border">
+        <div className="mt-auto shrink-0 border-t border-white/[0.06] bg-gradient-to-b from-black/10 to-black/30 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
           <div className={cn("p-2", collapsed && "flex justify-center")}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   className={cn(
-                    "flex items-center rounded-lg text-left transition-colors hover:bg-sidebar-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/40",
+                    "flex items-center rounded-lg text-left transition-all hover:bg-white/[0.06] hover:ring-1 hover:ring-white/[0.08] focus:outline-none focus:ring-2 focus:ring-accent/40",
                     collapsed ? "h-10 w-10 justify-center" : "w-full gap-2.5 px-2 py-2",
                   )}
                   aria-label="Account menu"
                 >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent/60 text-white text-xs font-semibold">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent/60 text-white text-xs font-semibold shadow-[0_4px_10px_-2px_color-mix(in_oklab,var(--accent)_55%,transparent),inset_0_1px_0_0_rgba(255,255,255,0.25)] ring-1 ring-white/10">
                     {USER.initials}
                   </div>
                   {!collapsed && (
@@ -168,7 +174,7 @@ export function Sidebar({ mobileOpen, onCloseMobile, collapsed, onToggleCollapse
 
           <div
             className={cn(
-              "hidden lg:flex border-t border-sidebar-border px-2 py-2",
+              "hidden lg:flex border-t border-white/[0.05] px-2 py-2",
               collapsed ? "justify-center" : "justify-between items-center px-3",
             )}
           >
