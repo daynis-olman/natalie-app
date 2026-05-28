@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export const Route = createFileRoute("/account")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "My Account — Natalie's Compass" },

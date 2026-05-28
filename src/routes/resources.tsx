@@ -20,6 +20,7 @@ import { formatDate, initials } from "@/lib/heatmapUtils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/resources")({
+  ssr: false,
   component: ResourcesPage,
   head: () => ({ meta: [{ title: "Resources · Natalie's Compass" }] }),
 });

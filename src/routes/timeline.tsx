@@ -3,6 +3,7 @@ import { TimelineGrid } from "@/components/timeline/TimelineGrid";
 import { GanttSwimLane } from "@/components/timeline/GanttSwimLane";
 
 export const Route = createFileRoute("/timeline")({
+  ssr: false,
   component: TimelinePage,
   head: () => ({ meta: [{ title: "Timeline · Natalie's Compass" }] }),
 });

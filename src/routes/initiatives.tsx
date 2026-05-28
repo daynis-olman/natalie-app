@@ -3,6 +3,7 @@ import { useAppState } from "@/context/AppState";
 import { InitiativeCard } from "@/components/initiatives/InitiativeCard";
 
 export const Route = createFileRoute("/initiatives")({
+  ssr: false,
   component: InitiativesPage,
   head: () => ({ meta: [{ title: "Initiatives · Natalie's Compass" }] }),
 });

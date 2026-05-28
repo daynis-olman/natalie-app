@@ -7,7 +7,7 @@ import { RiskBanner } from "@/components/dashboard/RiskBanner";
 import { useAppState } from "@/context/AppState";
 import { findPeakMonth, generateMonths, formatMonth } from "@/lib/heatmapUtils";
 
-export const Route = createFileRoute("/")({ component: Index });
+export const Route = createFileRoute("/")({ ssr: false, component: Index });
 
 function Index() {
   const { initiatives, displayUnits, scoreFor } = useAppState();

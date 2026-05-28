@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { InitiativeHeatmapGrid } from "@/components/heatmap/InitiativeHeatmapGrid";
 
 export const Route = createFileRoute("/heatmap")({
+  ssr: false,
   component: HeatmapPage,
   head: () => ({ meta: [{ title: "Heatmap · Natalie's Compass" }] }),
 });

@@ -3,6 +3,7 @@ import { CriteriaCard } from "@/components/criteria/CriteriaCard";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export const Route = createFileRoute("/criteria")({
+  ssr: false,
   component: CriteriaPage,
   head: () => ({ meta: [{ title: "Impact Criteria · Natalie's Compass" }] }),
 });
